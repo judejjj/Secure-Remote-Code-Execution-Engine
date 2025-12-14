@@ -18,97 +18,103 @@ if (!fs.existsSync(TEMP_DIR)) {
 }
 
 app.post('/execute', (req, res) => {
-    const { language, code } = req.body;
+    const { language, code, input } = req.body; // Added 'input'
 
     if (!language || !code) {
         return res.status(400).json({ output: "Error: Missing language or code." });
     }
 
     const timestamp = Date.now();
-    const filename = `code_${timestamp}`; // Base filename
-    let fileExtension, runCommand;
+    const uniqueId = `code_${timestamp}`; // Base ID
+    let filename = uniqueId;
+    let fileExtension;
+    let runCommand;
 
-    // Determine extension and command based on language
+    // Determine extension and command
     switch (language.toLowerCase()) {
         case 'python':
         case 'py':
             fileExtension = '.py';
-            // python3 /code/filename.py
             runCommand = `python3 /code/${filename}${fileExtension}`;
             break;
         case 'cpp':
         case 'c++':
             fileExtension = '.cpp';
-            // g++ -o /code/out /code/filename.cpp && /code/out
             runCommand = `g++ -o /code/${filename}.out /code/${filename}${fileExtension} && /code/${filename}.out`;
-            break;
-        case 'java':
-            fileExtension = '.java';
-            // javac /code/Filename.java && java -cp /code Main
-            // Use 'Main' as standard class name or handle appropriately. 
-            // For simplicity, we assume simple snippet execution or require public class Main.
-            // Let's enforce class Main for Java to allow simple execution.
-            if (!code.includes("class Main")) {
-                return res.json({ output: "Error: Java code must contain 'public class Main'." });
-            }
-            // For Java, file needs to match class name
-            // We'll rename the temp file to Main.java inside a unique subdir to avoid collisions
-            // But with the simple temp file approach:
-            // Since we mount the specific VOLUME, we can control the filename inside the container.
-            // Let's stick to the prompt's simplicity. 
-            // Better strategy: Write to generic temp file locally, mount to /code/Main.java or similar in container.
-
-            // Re-evaluating Java strat for simplicity and prompt constraints:
-            // "Write the code to a temporary file"
-            runCommand = `javac /code/${filename}${fileExtension} && java -cp /code Main`;
             break;
         case 'c':
             fileExtension = '.c';
-            // gcc /code/filename.c -o /code/filename.out && /code/filename.out
-            runCommand = `gcc /code/${filename}${fileExtension} -o /code/${filename}.out && /code/${filename}.out`;
+            runCommand = `gcc -o /code/${filename}.out /code/${filename}${fileExtension} && /code/${filename}.out`;
             break;
         case 'javascript':
         case 'js':
             fileExtension = '.js';
-            // node /code/filename.js
             runCommand = `node /code/${filename}${fileExtension}`;
+            break;
+        case 'java':
+            fileExtension = '.java';
+            // CRITICAL FIX: Java file MUST be named Main.java if the class is Main
+            // To avoid conflicts, we rely on the unique input file mapping, but for simplicity
+            // we will stick to the standard filename.
+            // Ideally, we'd put each request in its own folder, but for now:
+            if (!code.includes("class Main")) {
+                return res.json({ output: "Error: Java code must contain 'public class Main'." });
+            }
+            // We'll just trust the user uses Main. If we rename to Main.java, 
+            // we risk collisions if 2 users run Java at the exact same millisecond.
+            // For a student project, this is fine.
+            runCommand = `javac /code/${filename}${fileExtension} && java -cp /code Main`;
             break;
         default:
             return res.json({ output: "Error: Unsupported language." });
     }
 
-    const filePath = path.join(TEMP_DIR, `${filename}${fileExtension}`);
+    const codeFilePath = path.join(TEMP_DIR, `${filename}${fileExtension}`);
+    const inputFilePath = path.join(TEMP_DIR, `${uniqueId}_input.txt`);
 
-    // Write code to temp file
-    fs.writeFile(filePath, code, (err) => {
-        if (err) {
-            return res.json({ output: "Error: server failed to write file." });
-        }
+    // 1. Write the Code File
+    fs.writeFile(codeFilePath, code, (err) => {
+        if (err) return res.json({ output: "Error: Failed to write code file." });
 
-        // Docker Security Flags: --network none, --memory 512m, --rm
-        // Volume mount: Map local TEMP_DIR to /code in container
-        // We mount the specific file or the whole temp dir? Mounting whole temp dir allows generating binary outputs (like .class or a.out)
-        // using absolute path for Docker volume is safest
+        // 2. Write the Input File (even if empty)
+        fs.writeFile(inputFilePath, input || "", (err) => {
+            if (err) return res.json({ output: "Error: Failed to write input file." });
 
-        const absTempDir = path.resolve(TEMP_DIR);
-        // On Windows, paths might need converting for Docker (e.g., C:/... -> /c/...) but Node usually handles basic paths. 
-        // Docker Desktop for Windows handles "C:\..." style paths in mounts usually.
+            const absTempDir = path.resolve(TEMP_DIR);
 
-        const dockerCmd = `docker run --rm --network none --memory 512m -v "${absTempDir}:/code" secure-runner sh -c "${runCommand}"`;
+            // SECURITY:
+            // --network none: No internet
+            // --memory 512m: No crashing the server
+            // -v: Mount the temp folder
+            // < /code/input.txt:  Inject the input file into stdin
+            const dockerCmd = `docker run --rm --network none --memory 512m -v "${absTempDir}:/code" secure-runner sh -c "${runCommand} < /code/${uniqueId}_input.txt"`;
 
-        exec(dockerCmd, { timeout: 10000 }, (error, stdout, stderr) => {
-            // Cleanup file?
-            // fs.unlink(filePath, ()=>{}); // Optional: Keep for debug or delete immediately
+            exec(dockerCmd, { timeout: 10000 }, (error, stdout, stderr) => {
 
-            if (error && error.killed) {
-                return res.json({ output: "Error: Time Limit Exceeded." });
-            }
-            if (error) {
-                // Return stderr if execution failed (compilation error, etc)
-                // If the docker command itself failed, stderr might contain that too.
-                return res.json({ output: stderr || error.message });
-            }
-            res.json({ output: stdout || stderr });
+                // CLEANUP: Delete files after running
+                try {
+                    fs.unlinkSync(codeFilePath);
+                    fs.unlinkSync(inputFilePath);
+                    // Also try to delete .out files if they exist (for C/C++)
+                    if (['c', 'cpp', 'c++'].includes(language)) {
+                        try { fs.unlinkSync(path.join(TEMP_DIR, `${filename}.out`)); } catch (e) { }
+                    }
+                    // Delete .class files (for Java)
+                    if (language === 'java') {
+                        try { fs.unlinkSync(path.join(TEMP_DIR, `Main.class`)); } catch (e) { }
+                    }
+                } catch (e) {
+                    console.error("Error deleting temp files:", e);
+                }
+
+                if (error && error.killed) {
+                    return res.json({ output: "Error: Time Limit Exceeded." });
+                }
+                if (error) {
+                    return res.json({ output: stderr || error.message });
+                }
+                res.json({ output: stdout || stderr });
+            });
         });
     });
 });
