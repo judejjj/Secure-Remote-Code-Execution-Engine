@@ -68,8 +68,13 @@ document.addEventListener('DOMContentLoaded', () => {
         runBtn.innerHTML = '<span class="spinner"></span> Running...';
         logToTerminal("> Compiling and Executing...", "system-msg");
 
+        logToTerminal("> Compiling and Executing...", "system-msg");
+
         try {
-            const response = await fetch('http://localhost:3000/execute', {
+            // Dynamic URL: connect to the SAME IP address as the website, but on port 3000
+            const backendUrl = `http://${window.location.hostname}:3000/execute`;
+
+            const response = await fetch(backendUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
