@@ -4,10 +4,14 @@
 ![Node](https://img.shields.io/badge/Node.js-v18+-green.svg)
 ![Docker](https://img.shields.io/badge/Docker-Required-blue.svg)
 ![Status](https://img.shields.io/badge/Status-Active-success.svg)
+![Deployment](https://img.shields.io/badge/Deployment-AWS_EC2-orange.svg)
 
 A robust, **multi-language online compiler** designed to execute untrusted user code in a secure, isolated environment.
 
 This project implements a **Client-Server architecture** where a Flask-based frontend sends code to a Node.js backend, which spins up ephemeral Docker containers (Alpine Linux) to compile and run the code safely.
+
+### 🌐 **Live Demo:** [http://13.233.152.32:5000](http://13.233.152.32:5000)
+*(Note: Ensure the backend is running to execute code)*
 
 ---
 
@@ -15,6 +19,7 @@ This project implements a **Client-Server architecture** where a Flask-based fro
 
 * **Multi-Language Support:** Compiles and runs C, C++, Java, Python, and JavaScript.
 * **Secure Sandboxing:** Uses Docker containers with strict memory (512MB) and network limits to prevent malicious activity.
+* **Cloud Native:** Fully deployed and operational on **Amazon AWS EC2**.
 * **Standard Library Support:** Full support for `std::cin`, `std::cout`, and standard libraries in all languages.
 * **Custom Input (Batch):** Supports user inputs (stdin) for interactive programs.
 * **Cyberpunk IDE UI:** A modern, dark-mode web interface powered by CodeMirror for syntax highlighting and line numbers.
@@ -40,6 +45,7 @@ This project implements a **Client-Server architecture** where a Flask-based fro
 * **Frontend:** Python (Flask), HTML5, CSS3, JavaScript, CodeMirror.
 * **Backend:** Node.js, Express.js.
 * **Engine:** Docker, Alpine Linux.
+* **Infrastructure:** AWS EC2 (Ubuntu), PM2 (Process Management).
 * **Languages Supported:**
     * 🐍 Python 3
     * ☕ Java (OpenJDK)
@@ -49,7 +55,7 @@ This project implements a **Client-Server architecture** where a Flask-based fro
 
 ---
 
-## 🚀 Installation & Setup
+## 🚀 Installation & Setup (Local)
 
 ### Prerequisites
 * **Docker Desktop** (Must be installed and running).
@@ -94,7 +100,7 @@ python app.py
 
 ## 📸 Usage
 
-1.  **Open the App:** Go to `http://localhost:5000` in your web browser.
+1.  **Open the App:** Go to `http://localhost:5000` (or your AWS IP) in your web browser.
 2.  **Select Language:** Choose your desired language (e.g., C++, Python) from the dropdown.
 3.  **Write Code:** Type your code in the dark-mode editor. (Boilerplate code is provided automatically).
 4.  **Provide Input (Optional):** If your code uses `cin` or `input()`, type the values in the "Custom Input" box.
@@ -108,7 +114,8 @@ python app.py
 
 * [ ] **Real-Time Execution:** Upgrade from REST API to WebSockets for live, interactive shell experience.
 * [ ] **User Accounts:** Add MongoDB integration to save user snippets.
-* [ ] **Cloud Deployment:** Deploy to AWS EC2 with Docker Compose.
+* [x] **Cloud Deployment:** Successfully deployed to AWS EC2.
+* [ ] **Domain Integration:** Configure Nginx reverse proxy for custom domain and SSL.
 
 ---
 
