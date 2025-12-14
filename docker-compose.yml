@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: rce-backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount the temp directory so it persists and matches the Host Path
+      - ./backend/temp:/usr/src/app/temp
+    environment:
+      # CRITICAL: This variable tells the backend where the temp folder is ON THE HOST
+      # We will set this in the .env file on the server.
+      - HOST_MOUNT_PATH=${HOST_MOUNT_PATH}
+
+  web:
+    build: ./web
+    container_name: rce-web
+    ports:
+      - "80:5000"
+    depends_on:
+      - backend

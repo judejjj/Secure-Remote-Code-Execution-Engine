@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureSandbox Compiler</title>
+
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">SecureSandbox <span class="accent">Compiler</span></div>
+        <div class="toolbar">
+            <select id="language-select">
+                <option value="python">Python 3</option>
+                <option value="c">C</option>
+                <option value="cpp">C++</option>
+                <option value="java">Java</option>
+                <option value="javascript">JavaScript</option>
+            </select>
+            <button id="run-btn">
+                <span class="icon">▶</span> Run
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <div class="editor-container">
+            <div class="panel-header">CODE</div>
+            <textarea id="code-editor"></textarea>
+        </div>
+
+        <div class="terminal-container">
+            <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>TERMINAL</span>
+                <button id="clear-btn" class="icon-btn" title="Clear Output">🗑️</button>
+            </div>
+            <div id="terminal-output" class="terminal-content">
+                <div class="line system-msg">> Ready for execution...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- CodeMirror JS & Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
