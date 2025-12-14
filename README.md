@@ -10,7 +10,7 @@ A robust, **multi-language online compiler** designed to execute untrusted user 
 
 This project implements a **Client-Server architecture** where a Flask-based frontend sends code to a Node.js backend, which spins up ephemeral Docker containers (Alpine Linux) to compile and run the code safely.
 
-### 🌐 **Live Demo:** [http://13.233.152.32:5000](http://13.233.152.32:5000)
+### 🌐 **Live Demo:** [http://13.233.152.32](http://13.233.152.32)
 *(Note: Ensure the backend is running to execute code)*
 
 ---
